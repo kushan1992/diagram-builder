@@ -1,3 +1,5 @@
+import { Node, Edge } from "reactflow";
+
 export type UserRole = "editor" | "viewer";
 
 export interface User {
@@ -11,6 +13,24 @@ export interface Collaborator {
   email: string;
   role: "editor" | "viewer";
   addedAt: Date;
+}
+
+export interface Diagram {
+  id: string;
+  title: string;
+  ownerId: string;
+  ownerEmail: string;
+  nodes: Node[];
+  edges: Edge[];
+  collaborators: Record<string, "editor" | "viewer">; // userId: role
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DiagramFormData {
+  title: string;
+  nodes: Node[];
+  edges: Edge[];
 }
 
 export interface ShareInvite {
