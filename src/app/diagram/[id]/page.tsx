@@ -14,7 +14,6 @@ import ReactFlow, {
   NodeChange,
   EdgeChange,
 } from "reactflow";
-// @ts-expect-error: allow importing CSS side-effect without type declarations
 import "reactflow/dist/style.css";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
