@@ -4,7 +4,15 @@ import {
   signOut as firebaseSignOut,
   User as FirebaseUser,
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+} from "firebase/firestore";
 import { auth, db } from "./config";
 import { User, UserRole } from "../types";
 
@@ -70,3 +78,58 @@ export const getUserData = async (
     createdAt: userData.createdAt?.toDate() || new Date(),
   };
 };
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+  const usersRef = collection(db, "users");
+  const q = query(usersRef, where("email", "==", email));
+
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+    console.log("null");
+    return null;
+  }
+
+  const userDoc = querySnapshot.docs[0];
+  const userData = userDoc.data();
+
+  const createdAt =
+    userData.createdAt && typeof userData.createdAt.toDate === "function"
+      ? userData.createdAt.toDate()
+      : userData.createdAt
+      ? new Date(userData.createdAt as Date)
+      : new Date();
+
+  return {
+    uid: userDoc.id,
+    email: userData.email || email,
+    role: userData.role as UserRole,
+    createdAt,
+  };
+};
+export const getAllUsers = async (): Promise<User[]> => {
+  const usersRef = collection(db, "users");
+  const querySnapshot = await getDocs(usersRef);
+
+  if (querySnapshot.empty) {
+    return [];
+  }
+
+  return querySnapshot.docs.map((userDoc) => {
+    const userData = userDoc.data();
+
+    const createdAt =
+      userData.createdAt && typeof userData.createdAt.toDate === "function"
+        ? userData.createdAt.toDate()
+        : userData.createdAt
+        ? new Date(userData.createdAt as Date)
+        : new Date();
+
+    return {
+      uid: userDoc.id,
+      email: userData.email || "",
+      role: userData.role as UserRole,
+      createdAt,
+    };
+  });
+};
+

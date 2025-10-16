@@ -14,13 +14,21 @@ import ReactFlow, {
   NodeChange,
   EdgeChange,
 } from "reactflow";
+// @ts-expect-error: allow importing CSS side-effect without type declarations
 import "reactflow/dist/style.css";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getDiagram, updateDiagram } from "@/lib/firebase/firestore";
-import { Diagram } from "@/lib/types";
-import { Save, Plus, Share2, ArrowLeft } from "lucide-react";
+import {
+  getDiagram,
+  shareDiagram,
+  updateDiagram,
+} from "@/lib/firebase/firestore";
+import { ConfirmToastProps, DeletedNode, Diagram, UserRole } from "@/lib/types";
+import { Save, Plus, Share2, ArrowLeft, Trash2 } from "lucide-react";
 import { nodeTypes } from "@/components/diagram/diagramNodes/nodeTypes";
+import { getUserByEmail } from "@/lib/firebase/auth";
+import { toast } from "react-toastify";
+import ConfirmToast from "@/components/toastProvider/ConfirmToast";
 
 export default function DiagramEditorPage() {
   const params = useParams();
@@ -36,6 +44,9 @@ export default function DiagramEditorPage() {
   const [nodeLabel, setNodeLabel] = useState("");
   const [nodeShape, setNodeShape] = useState("rectangle");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<UserRole>("editor");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const permissions = usePermissions(user, diagram);
 
@@ -77,10 +88,10 @@ export default function DiagramEditorPage() {
     setSaving(true);
     try {
       await updateDiagram(diagramId, { nodes, edges });
-      alert("Diagram saved successfully!");
+      toast.success("Diagram saved successfully!");
     } catch (error) {
       console.error("Error saving diagram:", error);
-      alert("Failed to save diagram");
+      toast.error("Failed to save diagram!");
     } finally {
       setSaving(false);
     }
@@ -129,18 +140,117 @@ export default function DiagramEditorPage() {
   );
 
   const handleNodesDelete = useCallback(
-    (deletedNodes) => {
-      setEdges((eds) =>
+    (deletedNodes: DeletedNode[]): void => {
+      setEdges((eds: Edge[]) =>
         eds.filter(
-          (edge) =>
+          (edge: Edge) =>
             !deletedNodes.some(
-              (node) => node.id === edge.source || node.id === edge.target
+              (node: DeletedNode) =>
+                node.id === edge.source || node.id === edge.target
             )
         )
       );
     },
     [setEdges]
   );
+
+  const handleShareDiagramSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      if (email) {
+        const user = await getUserByEmail(email);
+        if (!user) {
+          toast.error("No user found with that email!");
+        }
+        if (user?.uid === diagram?.ownerId) {
+          toast.error("Cannot share diagram with the owner!");
+          return;
+        }
+        if (diagram?.collaborators[user!.uid] === role) {
+          toast.error(`User already has ${role} access`);
+          return;
+        }
+        if (diagram) {
+          await shareDiagram(diagramId, user!.uid, role);
+          toast.success(`Diagram shared with ${email} as ${role}`);
+          setShowShareModal(false);
+          setEmail("");
+        }
+      }
+    } catch (err) {
+      console.error("Error sharing diagram:", err);
+      setEmail("");
+      setShowShareModal(false);
+    } finally {
+      setEmail("");
+      setShowShareModal(false);
+    }
+  };
+  const handleDeleteSelectedNode = () => {
+    if (!permissions.canEdit || !selectedNodeId) return;
+    setNodes((nds) => nds.filter((node) => node.id !== selectedNodeId));
+    setEdges((eds) =>
+      eds.filter(
+        (edge) =>
+          edge.source !== selectedNodeId && edge.target !== selectedNodeId
+      )
+    );
+    setSelectedNodeId(null);
+  };
+  const showDeleteSelectedNode = () => {
+    toast(
+      <ConfirmToast
+        onConfirm={() => handleDeleteSelectedNode()}
+        onCancel={() => console.log("Canceled!")}
+        icon={<Trash2 size={16} className="text-red-500" />}
+        title="Delete Node"
+        subTitle="Are you sure you want to delete the node."
+        primaryButton="Delete"
+        secondaryButton="Not now"
+        color="red"
+      />,
+      {
+        autoClose: false, // Prevent auto-closing
+        closeOnClick: false, // Prevent closing on click outside buttons
+      }
+    );
+  };
+
+  const handleSaveNodes = async () => {
+    if (!permissions.canEdit) return;
+
+    setSaving(true);
+    try {
+      await updateDiagram(diagramId, { nodes, edges });
+      toast.success("Diagram saved successfully!");
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Error saving diagram:", error);
+      toast.error("Failed to save diagram!");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const showBackToDashboard = () => {
+    toast(
+      <ConfirmToast
+        onConfirm={() => handleSaveNodes()}
+        onCancel={() => router.push("/dashboard")}
+        icon={<Save size={16} className="text-blue-500" />}
+        title="Save Nodes"
+        subTitle="Are you want to save existing changes."
+        primaryButton="Save"
+        secondaryButton="Go Back"
+        color="blue"
+      />,
+      {
+        autoClose: false, // Prevent auto-closing
+        closeOnClick: false, // Prevent closing on click outside buttons
+      }
+    );
+  };
 
   if (authLoading || loading) {
     return (
@@ -161,8 +271,8 @@ export default function DiagramEditorPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.push("/dashboard")}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+              onClick={() => showBackToDashboard()}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
             >
               <ArrowLeft size={20} />
             </button>
@@ -219,7 +329,7 @@ export default function DiagramEditorPage() {
                 </div>
                 <button
                   onClick={handleAddNode}
-                  className="flex w-full items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  className="flex w-full items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 cursor-pointer"
                 >
                   <Plus size={16} />
                   Add Node
@@ -227,7 +337,7 @@ export default function DiagramEditorPage() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
                 >
                   <Save size={16} />
                   {saving ? "Saving..." : "Save"}
@@ -237,7 +347,7 @@ export default function DiagramEditorPage() {
             {permissions.canShare && (
               <button
                 onClick={() => setShowShareModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
               >
                 <Share2 size={16} />
                 Share
@@ -259,15 +369,27 @@ export default function DiagramEditorPage() {
           edges={edges}
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
+          deleteKeyCode={["Backspace", "Delete"]}
           onNodesDelete={handleNodesDelete}
+          onPaneClick={() => setSelectedNodeId(null)}
           onConnect={onConnect}
+          onNodeClick={(event, node) => setSelectedNodeId(node.id)}
           nodesDraggable={permissions.canEdit}
           nodesConnectable={permissions.canEdit}
           elementsSelectable={permissions.canEdit}
           nodeTypes={nodeTypes}
         >
           <Background />
-          <Controls />
+          <Controls>
+            {selectedNodeId && (
+              <button
+                onClick={showDeleteSelectedNode}
+                className="px-1 py-1 mt-1 w-[25px] h-[30px] bg-red-600 text-white rounded-md hover:bg-red-700 cursor-pointer"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </Controls>
         </ReactFlow>
       </div>
 
@@ -278,19 +400,164 @@ export default function DiagramEditorPage() {
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
               Share Diagram
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Sharing functionality coming soon. You can share diagrams by
-              inviting users via email.
-            </p>
-            <button
-              onClick={() => setShowShareModal(false)}
-              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-            >
-              Close
-            </button>
+            <div>
+              <form
+                className="mt-8 space-y-6"
+                onSubmit={handleShareDiagramSubmit}
+              >
+                <div className="rounded-md shadow-sm space-y-4">
+                  <div>
+                    <label htmlFor="email" className="sr-only">
+                      Email address
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                      placeholder="Email address"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="role"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Account Type
+                    </label>
+                    <select
+                      id="role"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as UserRole)}
+                      className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    >
+                      <option value="editor">Editor</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Share
+                  </button>
+                  <button
+                    onClick={() => setShowShareModal(false)}
+                    className="w-full px-4 py-2 mt-3 bg-red-600 hover:bg-red-700  text-white rounded-md cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+const ConfirmDeleteNodeToast = ({
+  closeToast = () => {},
+  onConfirm,
+  onCancel,
+}: ConfirmToastProps) => (
+  <div>
+    <div className="flex">
+      <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg ">
+        <Trash2 size={16} />
+        <span className="sr-only">Delete icon</span>
+      </div>
+      <div className="ms-3 text-sm font-normal">
+        <span className="mb-1 text-sm font-medium text-gray-900">
+          Delete Node
+        </span>
+        <div className="mb-2 text-sm font-normal">
+          Are you sure you want to delete the node.
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <a
+              href="#"
+              onClick={() => {
+                onConfirm();
+                closeToast();
+              }}
+              className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-white bg-red-600 rounded-lg focus:ring-4 focus:outline-none focus:ring-blue-300"
+            >
+              Delete
+            </a>
+          </div>
+          <div>
+            <a
+              href="#"
+              onClick={() => {
+                onCancel();
+                closeToast();
+              }}
+              className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-600 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700"
+            >
+              Not now
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const ConfirmBackToDashboardToast = ({
+  closeToast = () => {},
+  onConfirm,
+  onCancel,
+}: ConfirmToastProps) => (
+  <div>
+    <div className="flex">
+      <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-lg ">
+        <Save size={16} />
+        <span className="sr-only">Save icon</span>
+      </div>
+      <div className="ms-3 text-sm font-normal">
+        <span className="mb-1 text-sm font-medium text-gray-900">
+          Save Nodes
+        </span>
+        <div className="mb-2 text-sm font-normal">
+          Are you want to save existing changes.
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <a
+              href="#"
+              onClick={() => {
+                onConfirm();
+                closeToast();
+              }}
+              className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-white bg-blue-600 rounded-lg focus:ring-4 focus:outline-none focus:ring-blue-300"
+            >
+              Save
+            </a>
+          </div>
+          <div>
+            <a
+              href="#"
+              onClick={() => {
+                onCancel();
+                closeToast();
+              }}
+              className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-600 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700"
+            >
+              Go Back
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);

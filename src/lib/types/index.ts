@@ -48,3 +48,19 @@ export interface AuthContextType {
   signUp: (email: string, password: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
 }
+
+export interface DeletedNode {
+  id: string;
+}
+
+export type ConfirmToastProps = {
+  closeToast?: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+  icon?: React.ReactNode;
+  title: string;
+  subTitle: string;
+  primaryButton: string;
+  secondaryButton: string;
+  color: string;
+};

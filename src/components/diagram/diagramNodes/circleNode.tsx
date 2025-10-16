@@ -40,6 +40,7 @@ const CircleNode: React.FC<NodeProps<CircleNodeData>> = ({
         style={{ borderRadius: "50%" }}
         isConnectable={isConnectable}
       />
+
       <div
         style={{
           width: 100,

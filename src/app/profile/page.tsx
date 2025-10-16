@@ -41,7 +41,7 @@ export default function ProfilePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <button
             onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
+            className="flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white cursor-pointer"
           >
             <ArrowLeft size={20} />
             Back to Dashboard
@@ -126,7 +126,7 @@ export default function ProfilePage() {
               </h3>
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors cursor-pointer"
               >
                 <LogOut size={18} />
                 Logout from Account
