@@ -295,7 +295,7 @@ export default function DiagramEditorPage() {
                   value={nodeLabel}
                   onChange={(e) => setNodeLabel(e.target.value)}
                   placeholder="Node label"
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="px-3 py-2 border border-gray-300 rounded-md placeholder:text-slate-400 text-sm text-slate-500"
                   onKeyPress={(e) => e.key === "Enter" && handleAddNode()}
                 />
                 <div className="w-full max-w-sm min-w-[200px]">
@@ -303,7 +303,7 @@ export default function DiagramEditorPage() {
                     <select
                       value={nodeShape}
                       onChange={(e) => setNodeShape(e.target.value)}
-                      className="w-full bg-transparent placeholder:text-slate-400 text-slate-400 text-sm border border-slate-200 rounded pl-3 pr-8 py-2 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-400 shadow-sm focus:shadow-md appearance-none cursor-pointer"
+                      className="w-full bg-transparent placeholder:text-slate-400 text-slate-500 text-sm border border-slate-200 rounded pl-3 pr-8 py-2 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-400 shadow-sm focus:shadow-md appearance-none cursor-pointer"
                     >
                       <option value="rectangle">Rectangle shape</option>
                       <option value="square">Square shape</option>
@@ -417,7 +417,7 @@ export default function DiagramEditorPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-600 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                      className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                       placeholder="Email address"
                     />
                   </div>
@@ -432,7 +432,7 @@ export default function DiagramEditorPage() {
                       id="role"
                       value={role}
                       onChange={(e) => setRole(e.target.value as UserRole)}
-                      className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-600 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                      className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                     >
                       <option value="editor">Editor</option>
                       <option value="viewer">Viewer</option>

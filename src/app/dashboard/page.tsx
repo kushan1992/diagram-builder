@@ -12,9 +12,10 @@ import { Diagram } from "@/lib/types";
 import { Plus, Trash2, Edit, Eye } from "lucide-react";
 import { toast } from "react-toastify";
 import ConfirmToast from "@/components/toastProvider/ConfirmToast";
+import ThemeToggle from "@/components/themeSwitch/ThemeToggle";
 
 export default function DashboardPage() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [diagrams, setDiagrams] = useState<Diagram[]>([]);
   const [isLoadingDiagrams, setIsLoadingDiagrams] = useState(true);
@@ -122,6 +123,7 @@ export default function DashboardPage() {
             >
               Profile
             </button>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -232,7 +234,7 @@ export default function DashboardPage() {
               value={newDiagramTitle}
               onChange={(e) => setNewDiagramTitle(e.target.value)}
               placeholder="Diagram title"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 text-gray-900"
               autoFocus
             />
             <div className="flex gap-2">
