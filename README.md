@@ -78,14 +78,10 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 <p>Replace each <code>your_...</code> with the actual values from your Firebase config object.</p>
 
-
 ## Getting Started
 
 <h2> NPM Install</h2>
 <pre><code>npm install</code></pre>
-
-<h2> Run Project</h2>
-<pre><code>npm run dev</code></pre>
 
 <h2>🚀 Start Development Server</h2>
 
@@ -218,4 +214,3 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
   <li>Add environment variables from <code>.env.local</code></li>
   <li>Click <strong>"Deploy"</strong></li>
 </ol>
-
