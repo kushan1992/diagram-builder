@@ -34,8 +34,10 @@ export default function LoginPage() {
         await signIn(email, password);
       }
       router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      const userMessage = getAuthErrorMessage(message);
+      setError(userMessage);
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +52,7 @@ export default function LoginPage() {
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
+          <div className="rounded-md space-y-4">
             <div>
               <label htmlFor="email" className="sr-only">
                 Email address
@@ -63,7 +65,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-600 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
               />
             </div>
@@ -79,7 +81,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-600 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
               />
             </div>
@@ -95,7 +97,7 @@ export default function LoginPage() {
                   id="role"
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-600 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 >
                   <option value="editor">Editor</option>
                   <option value="viewer">Viewer</option>
@@ -105,7 +107,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div role="alert" className="rounded-md bg-red-50 p-4">
               <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
@@ -138,4 +140,26 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function getAuthErrorMessage(errorCode: string): string {
+  console.log(errorCode);
+
+  switch (errorCode) {
+    case "Firebase: Error (auth/invalid-email).":
+      return "The email address is not valid.";
+    case "Firebase: Error (auth/wrong-password).":
+      return "Incorrect password. Please try again.";
+    case "Firebase: Error (auth/invalid-credential).":
+      return "Invalid credentials provided.";
+    case "Firebase: Error (auth/user-not-found).":
+      return "No account found with this email address.";
+    case "Firebase: Error (auth/email-already-in-use).":
+      return "This email address is already registered.";
+    case "Firebase: Error (auth/weak-password).":
+      return "The password is too weak. Please choose a stronger one.";
+    // Add more cases for other common errors
+    default:
+      return "An unexpected error occurred. Please try again.";
+  }
 }
